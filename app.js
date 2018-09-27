@@ -1,31 +1,49 @@
 #!/usr/bin/env node
-const Main = require('./main');
+const setRequest = require('./request');
 const yargs = require('yargs')
 .command('photo','Get photos from Tumblr.')
 .command('video','Get videos from Tumblr.')
+.command('help','Get help information.')
 .options({
-  'u': {
-    alias: 'username',
-    default: 'm3102'
+  'username': {
+    alias: 'u',
+    default: 'c0096'
   },
-  'p': {
-    alias: 'page',
+  'page': {
+    alias: 'p',
     default: 0
   },
-  't': {
-    alias: 'thread',
-    default: 4
+  'thread': {
+    alias: 't',
+    default: 4,
+    description: 'Set threads for download.'
+  },
+  'noProxy': {
+    boolean: true,
+    description: 'Do not use HTTP proxy for download.'
+  },
+  'host': {
+    alias: 'H',
+    description: 'Set an HTTP proxy host.'
+  },
+  'port': {
+    alias: 'P',
+    description: 'Set a proxy port.'
+  },
+  'timeout': {
+    alias: 'T',
+    description: 'Set request timeout.'
   }
-}).example('$0 photo -u m3102 -p 2')
-.example('$0 video -u m3102 -p 0')
+}).example('$0 photo -u c0096')
+.example('$0 photo -u slavesmart --port 8080')
+.example('$0 video -u c0096 --noProxy')
 .demand(['u','p']).argv;
 
-const username = yargs.username, page = yargs.page, thread = yargs.thread;
-const args = { username, page, thread};
+const args = yargs;
 args.type = yargs._[0];
 
 if(args.type == 'photo' || args.type == 'video'){
-  const func = new Main(args); 
+  setRequest(args);
 }else{
-  console.info('命令不正确，获取帮助请使用 help 命令')
+  console.error('命令不正确，获取帮助请使用 help 命令')
 }

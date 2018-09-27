@@ -1,7 +1,7 @@
+const crypto = require('crypto');
 const fs = require('fs');
-const request = require('./request');
 
-class DownloadTask {
+class List {
   constructor() {
     this.list = new Array();
   }
@@ -15,20 +15,28 @@ class DownloadTask {
   }
 }
 
-async function downloadFile(url, filename, path, e) {
+const hash = [];
+const md5 = (text)=> crypto.createHash('md5').update(text).digest('hex');
+
+const downloadFile = async (options)=>{
+  const {url, filename, path, e} = options;
+  const getBinary = (url)=> request.get(url ,{encoding: 'binary'});
+  const checkMD5 = (list, item)=> list.includes(md5(item));
+
   if(!fs.existsSync(path)) fs.mkdirSync(path);
   const filepath = `${path}/${filename}`;
+
   if(!fs.existsSync(filepath)) {
-    await request.get(url ,{encoding: 'binary'}).then((res)=>{
-      fs.writeFileSync(filepath,res,'binary');
-      e.trigger('download-file-success')
+    await getBinary(url).then((res)=>{
+      if (!checkMD5(hash, res)) {  
+        fs.writeFileSync(filepath,res,'binary');
+        hash.push(md5(res));
+        e.trigger('download-file-success');
+      }
     }).catch((err)=>{
-      e.trigger('error', {err, message: `下载 ${filename} 文件`});
-      e.trigger('download-file-success')
+      e.trigger('download-file-fail', url);
     });
-  }else {
-    e.trigger('download-file-success');
   }
 }
 
-module.exports = {DownloadTask, downloadFile};
+module.exports = {List, downloadFile};

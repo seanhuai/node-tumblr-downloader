@@ -1,12 +1,11 @@
 const config = require('./config');
-const request = require('./request');
 const {installEventListener} = require('./event');
-const {DownloadTask, downloadFile} = require('./download');
+const {List, downloadFile} = require('./download');
 
 class Main {
   constructor(options){
     this.options = {
-      username: options.username || 'm-3102',
+      username: options.username || 'c0098',
       type: options.type || 'photo',
       page: options.page || 0,
       thread: options.thread || config.download.thread
@@ -18,7 +17,10 @@ class Main {
     this.eventlistener = installEventListener(e);
     this.eventInit();
 
-    this.list = new DownloadTask();
+    this.downloadList = new List();
+    this.reDownloadList = [];
+    this.reDownload = false;
+    
     this.final = this.options.thread;
     this.init();
   }
@@ -32,28 +34,35 @@ class Main {
   }
 
   eventInit(){
+    // 错误事件处理
     this.eventlistener.listen('error', (message)=>{
       console.log(`在${message.message}时发生了错误，错误信息 ${message.err}`);
-    })
+    });
+    //
     this.eventlistener.listen('get-page-number-finished', (message)=>{
-      console.log(`检索到资源共计 ${message} 页`);
+      console.log(`* 检索到资源共计 ${message} 页`);
       this.getFileList(this.options.page);
-    })
-    this.eventlistener.listen('get-file-success', (page)=>{
+    });
+    // 获取文件列表处理
+    this.eventlistener.listen('get-files-success', (page)=> this.getFileList(page));
+    this.eventlistener.listen('get-files-fail', (page)=> {
       this.getFileList(page);
-    })
-    this.eventlistener.listen('get-file-finished', (message)=>{
-      console.log(`下载任务已创建，共计 ${message} 项`);
-      this.list = this.list.get();
+    });
+    this.eventlistener.listen('get-files-finished', (message)=>{
+      console.log(`* 下载任务已创建，共计 ${message} 项`);
+      this.downloadList = this.downloadList.get();
       this.createDownloadTasks(this.options.thread);
-    })
-    this.eventlistener.listen('download-file-success', (message)=>{
+    });
+    // 下载任务处理
+    this.eventlistener.listen('download-file-success', (message)=> this.callDownloadTask());
+    this.eventlistener.listen('download-file-fail',(url)=>{
+      this.reDownloadList.push(url);
       this.callDownloadTask();
-    })
-    this.eventlistener.listen('download-file-final', ()=>{
+    });
+    this.eventlistener.listen('download-files-final', ()=>{
       this.final -= 1;
-      if(this.final <= 0) console.log('下载任务已完成');
-    })
+      if(this.final <= 0) console.log('* 下载任务已完成');
+    });
   }
 
   getPageNumber() {
@@ -71,7 +80,7 @@ class Main {
   }
 
   async getFileList(page){
-    if(page <= 0) return this.eventlistener.trigger('get-file-finished', this.list.get().length);
+    if(page <= 0) return this.eventlistener.trigger('get-files-finished', this.downloadList.get().length);
     await request.get(config.api.baseURL + this.url + `&offset=${(page-1)*20}`).then((res)=>{
       const json = JSON.parse(res);
       for (const key in json.response.posts) {
@@ -80,19 +89,19 @@ class Main {
           if (this.options.type == 'photo') {
             for (let i = 0; i < item.photos.length; i++) {
               const url = item.photos[i].original_size.url;
-              if(url) this.list.push(url);            
+              if(url) this.downloadList.push(url);            
             }
           }else {
             const url = item.video_url;
-            if(url) this.list.push(url);
+            if(url) this.downloadList.push(url);
           }
         }
       }
-      this.eventlistener.trigger('get-file-success', page-1);
+      this.eventlistener.trigger('get-files-success', page-1);
     }).catch((err)=>{
       const message = '获取下载文件列表';
-      this.eventlistener.trigger('error', {message, err})
-      this.eventlistener.trigger('get-file-success', page-1);
+      this.eventlistener.trigger('error', {message, err});
+      this.eventlistener.trigger('get-files-success', page-1);
     })
   }
 
@@ -103,9 +112,16 @@ class Main {
   }
 
   callDownloadTask() {
-    if(this.list.length <= 0) return this.eventlistener.trigger('download-file-final');
-    const item = this.list.pop(), path = `${config.download.path}/${this.options.username}`;
-    downloadFile(item, this.getFileName(item, this.options.type), path, this.eventlistener);
+    if(this.downloadList.length <= 0) {
+      if(this.reDownload || this.reDownloadList.length == 0) return this.eventlistener.trigger('download-files-final');
+      this.downloadList = this.reDownloadList;
+      this.reDownload = true, this.final = this.options.thread;
+      return this.createDownloadTasks(this.options.thread);
+    }
+    //console.log(this.downloadList);
+    const item = this.downloadList.pop(), path = `${config.download.path}/${this.options.username}`;
+    const options = {url:item, filename:this.getFileName(item, this.options.type), path, e:this.eventlistener}
+    downloadFile(options);
   }
 }
 

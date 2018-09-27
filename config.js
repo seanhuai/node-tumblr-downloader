@@ -9,6 +9,7 @@ const config = {
     thread: 4  // 默认并行下载数，可被覆盖
   },
   proxy: {
+    noProxy: false,
     protocol: 'http',  // 代理服务协议
     host: '127.0.0.1',  // 代理服务器地址
     port: 1080,  // 代理服务器接口

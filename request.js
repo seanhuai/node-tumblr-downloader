@@ -1,9 +1,22 @@
 const Request = require('request-promise-native');
+const Main = require('./main');
 const config = require('./config');
 
-const request = Request.defaults({
-  timeout: config.proxy.timeout,
-  proxy: `http://${config.proxy.host}:${config.proxy.port}`
-})
+const createOptions = (args)=>{
+  const { host = config.proxy.host, 
+    port = config.proxy.port, 
+    timeout = config.proxy.timeout, 
+    noProxy = config.proxy.noProxy } = args;
+  const options = {timeout}
+  if(!noProxy) {
+    options.proxy = `http://${host}:${port}`
+  }
+  return options;
+}
 
-module.exports = request;
+const setRequest = (options)=>{
+  global.request = Request.defaults(createOptions(options));
+  return new Main(options);
+};
+
+module.exports = setRequest;
