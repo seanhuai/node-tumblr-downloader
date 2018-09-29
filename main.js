@@ -63,6 +63,14 @@ class Main {
       this.final -= 1;
       if(this.final <= 0) console.log('* 下载任务已完成');
     });
+    this.eventlistener.listen('redownload-files-start', ()=>{
+      if(this.reDownloadList.length){
+        this.downloadList = this.reDownloadList;
+        this.final = this.options.thread;
+        this.createDownloadTasks(this.options.thread);
+      }
+      this.reDownload = true;
+    })
   }
 
   getPageNumber() {
@@ -113,12 +121,9 @@ class Main {
 
   callDownloadTask() {
     if(this.downloadList.length <= 0) {
-      if(this.reDownload || this.reDownloadList.length == 0) return this.eventlistener.trigger('download-files-final');
-      this.downloadList = this.reDownloadList;
-      this.reDownload = true, this.final = this.options.thread;
-      return this.createDownloadTasks(this.options.thread);
+      if(this.reDownload) return this.eventlistener.trigger('download-files-final');
+      this.eventlistener.trigger('redownload-files-start');
     }
-    //console.log(this.downloadList);
     const item = this.downloadList.pop(), path = `${config.download.path}/${this.options.username}`;
     const options = {url:item, filename:this.getFileName(item, this.options.type), path, e:this.eventlistener}
     downloadFile(options);
