@@ -1,3 +1,4 @@
+const fs = require('fs');
 const config = require('./config');
 const {installEventListener} = require('./event');
 const {List, downloadFile} = require('./download');
@@ -5,10 +6,11 @@ const {List, downloadFile} = require('./download');
 class Main {
   constructor(options){
     this.options = {
-      username: options.username || 'c0098',
+      username: options.username,
       type: options.type || 'photo',
       page: options.page || 0,
-      thread: options.thread || config.download.thread
+      thread: options.thread || config.download.thread,
+      output: options.output || config.download.path
     }
 
     this.url = `/blog/${this.options.username}/posts/${this.options.type}?api_key=${config.api.key}`;
@@ -61,7 +63,7 @@ class Main {
     });
     this.eventlistener.listen('download-files-final', ()=>{
       this.final -= 1;
-      if(this.final <= 0) console.log('* 下载任务已完成');
+      if(this.final == 0) console.log('* 下载任务已完成');
     });
     this.eventlistener.listen('redownload-files-start', ()=>{
       if(this.reDownloadList.length){
@@ -124,7 +126,8 @@ class Main {
       if(this.reDownload) return this.eventlistener.trigger('download-files-final');
       this.eventlistener.trigger('redownload-files-start');
     }
-    const item = this.downloadList.pop(), path = `${config.download.path}/${this.options.username}`;
+    if(!fs.existsSync(this.options.output)) fs.mkdirSync(this.options.output);
+    const item = this.downloadList.pop(), path = `${this.options.output}/${this.options.username}`;
     const options = {url:item, filename:this.getFileName(item, this.options.type), path, e:this.eventlistener}
     downloadFile(options);
   }

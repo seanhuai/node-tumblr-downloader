@@ -18,6 +18,10 @@ const yargs = require('yargs')
     default: 4,
     description: 'Set threads for download.'
   },
+  'output': {
+    alias: 'o',
+    description: 'Set output folder.'
+  },
   'noProxy': {
     boolean: true,
     description: 'Do not use HTTP proxy for download.'
@@ -34,7 +38,7 @@ const yargs = require('yargs')
     alias: 'T',
     description: 'Set request timeout.'
   }
-}).example('$0 photo -u c0096')
+}).example('$0 photo -u c0096 -p 0')
 .example('$0 photo -u slavesmart --port 8080')
 .example('$0 video -u c0096 --noProxy')
 .demand(['u','p']).argv;

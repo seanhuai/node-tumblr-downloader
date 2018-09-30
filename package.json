@@ -1,11 +1,17 @@
 {
   "name": "tumblr-downloader",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A reliable Tumblr download tool.",
   "main": "app.js",
+  "bin": {
+    "tumblr-downloader": "app.js"
+  },
   "repository": {
-    "type": "GitLab",
-    "url": "https://gitlab.com/seanhuai/node-tumblr-downloader/"
+    "type": "GitHub",
+    "url": "https://github.com/seanhuai/node-tumblr-downloader/"
+  },
+  "bugs": {
+    "url": "https://github.com/seanhuai/node-tumblr-downloader/issues"
   },
   "author": "Sean Huai",
   "license": "MIT",
