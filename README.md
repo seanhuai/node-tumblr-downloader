@@ -17,6 +17,24 @@
 *Linux 用户需要注意程序的读写和执行权限。*
 
 当上述命令执行完毕后，可以在本地全局调用 `tumblr-downloader` 命令，在任何位置执行下载操作。
+ 
+### Tumblr API 口令
+
+Tumblr 官方限制用户调用接口的次数，每小时最多申请 1000 次，每天最多 5000 次。为保证您的使用体验，请申请自己专用的用户口令。
+
+请在 [https://www.tumblr.com/oauth/apps](https://www.tumblr.com/oauth/apps) 申请你的 Tumblr API 口令。并修改 config.js 当中的示例 API key。
+
+```js
+const config = {
+  api: {
+    baseURL: 'https://api.tumblr.com/v2', // 主API版本
+    key: '请在这里输入你申请到的 key' 
+    // API key，访问 https://www.tumblr.com/oauth/apps 以获取
+  },
+  // ...
+}
+
+```
 
 ## 示例 Examples
 
@@ -82,10 +100,19 @@
 
 在设定选项时需要注意以下几点：
 
-1. 如果需要设置一些常用选项时，可以在 `config.js` 文件替换默认值，修改后可以不用再进行选项设置。
+1. 如果需要设置一些常用选项时，可以在 `config.js` 文件替换默认值，修改后可以不用再进行选项设置。其中 API key 属性请在申请专用口令后进行修改。
 2. 设定下载内容页数时，建议使用默认值 `0`；只有当用户数据量过大，需要获取其部分内容时才推荐填写具体数值，以免超量请求带来的致命错误。
 3. 由于境内众所周知的网络情况，程序默认是使用代理工作的；对于无需使用代理的用户，可以在执行命令时附带 `--noProxy` 选项或直接修改 `config.js` 文件的 `proxy.noProxy` 属性，该属性与 代理服务器地址、代理服务器端口 两属性冲突。
 4. 设置 `thread` 选项需要根据网络环境的实际情况，这个选项值越大，越有可能存在超时错误。一般图片下载建议 `2-6`，视频下载建议 `1-4`，一般建议使用默认值 `4`。
+
+## 错误信息 Error Message
+
+* StatusCodeError: 429, Limit Exceeded. 当前 API 口令超出调用次数的错误信息，请参考上文申请用户专用的 API 口令。
+* StatusCodeError: 404. 当前请求的用户数据不存在。
+
+### 其它已知问题
+
+部分用户发布图片时，选择在文本贴插入图片。这一操作将导致程序在获取文件链接过程中报错，具体表现为获取到数据页数但无法获取文件列表，返回 `TypeError: Cannot read property 'split' of undefined` 信息。这是一个已知问题，将尽速解决。需要说明的是，Tumblr 会将用户在文本贴中插入图片的贴文当作图像贴处理。
 
 ## 日志 LOG
 
